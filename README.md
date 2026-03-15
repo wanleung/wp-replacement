@@ -110,3 +110,23 @@ Full interactive docs: **http://localhost:8000/api/docs**
   Regular users can read only.
 - File uploads are validated by MIME type and limited to 50 MB.
 - No PHP, no WordPress attack surface.
+
+---
+
+## Author
+
+**Wan Leung Wong** — <me at wanleung dot com> — <https://github.com/wanleung>
+
+---
+
+## License
+
+Copyright (C) 2026 Wan Leung Wong <me@wanleung.com>
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the **GNU General Public License version 3 or later** as published
+by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but **without
+any warranty**; without even the implied warranty of merchantability or fitness
+for a particular purpose. See the [LICENSE](LICENSE) file for the full text.
