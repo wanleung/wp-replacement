@@ -121,7 +121,7 @@ Full interactive docs: **http://localhost:8000/api/docs**
 
 ## License
 
-Copyright (C) 2026 Wan Leung Wong <me@wanleung.com>
+Copyright (C) 2026 Wan Leung Wong <http://www.wanleung.com>
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the **GNU General Public License version 3 or later** as published
