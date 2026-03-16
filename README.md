@@ -99,7 +99,7 @@ Full interactive docs: **http://localhost:8000/api/docs**
 - **Flutter / Mobile**: The API only uses JWT bearer tokens and JSON — full
   compatibility with any HTTP client including Dio in Flutter.
 - **Static site generator**: Your existing static site generator continues to
-  read from the same WordPress MySQL DB unchanged.
+  read from the same WordPress MySQL DB unchanged. **https://github.com/wanleung/wp-static**
 
 ---
 
