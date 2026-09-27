@@ -2,7 +2,9 @@
 WordPress phpass-compatible password verification + JWT helpers.
 WordPress uses phpass (MD5-based iterated hashing) with the prefix $P$ or $H$.
 """
+import base64
 import hashlib
+import hmac
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -73,25 +75,56 @@ def wp_check_password(password: str, stored_hash: str) -> bool:
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# WordPress 6.8+ stores bcrypt hashes as '$wp' + the bcrypt string, and bcrypts a
+# pre-hashed password rather than the password itself — see wp_hash_password().
+_WP_BCRYPT_PREFIX = "$wp"
+_WP_HMAC_KEY = b"wp-sha384"
+
+
+def _wp_bcrypt_pre_hash(password: str) -> str:
+    """Pre-hash a password the way WordPress 6.8+ does before handing it to bcrypt.
+
+    base64(hmac_sha384(password, 'wp-sha384')) — a fixed 64-char digest, so
+    bcrypt's 72-byte input limit can never truncate a long password.
+    """
+    digest = hmac.new(
+        _WP_HMAC_KEY, password.encode("utf-8"), hashlib.sha384
+    ).digest()
+    return base64.b64encode(digest).decode("ascii")
+
 
 def hash_password(password: str) -> str:
-    """Hash a new password using bcrypt (stored as $2b$...)."""
-    return pwd_context.hash(password)
+    """Hash a new password in the WordPress 6.8+ format ($wp$2y$...).
+
+    Written in WordPress's own format so the same hash keeps working if the site is
+    ever administered through WordPress again.
+    """
+    # Match PHP trim() when creating hashes; verification must not trim.
+    password = password.strip(" \t\n\r\x00\x0b")
+    bcrypt_hash = pwd_context.hash(_wp_bcrypt_pre_hash(password))
+    # WordPress writes the PHP-native $2y$ variant; passlib emits the equivalent $2b$.
+    if bcrypt_hash.startswith("$2b$"):
+        bcrypt_hash = "$2y$" + bcrypt_hash[4:]
+    return _WP_BCRYPT_PREFIX + bcrypt_hash
 
 
 def verify_password(plain: str, stored: str) -> bool:
     """Try WordPress phpass first, then fallback to bcrypt."""
     if stored.startswith("$P$") or stored.startswith("$H$") or len(stored) == 32:
         return wp_check_password(plain, stored)
-    # WordPress 6.8+ wraps bcrypt with a $wp$ prefix — replace $wp$ with $ before verifying
-    if stored.startswith("$wp$"):
-        stored = "$" + stored[4:]
+
+    # WordPress 6.8+ bcrypt: strip the '$wp' marker and verify against the pre-hash,
+    # not the raw password. Bare $2y$/$2b$ hashes predate this and verify directly.
+    if stored.startswith(_WP_BCRYPT_PREFIX):
+        stored = stored[len(_WP_BCRYPT_PREFIX):]
+        plain = _wp_bcrypt_pre_hash(plain)
+
     # Normalize PHP/WordPress $2y$ bcrypt variant to $2b$ for passlib compatibility
     if stored.startswith("$2y$"):
         stored = "$2b$" + stored[4:]
     try:
         return pwd_context.verify(plain, stored)
-    except UnknownHashError:
+    except (UnknownHashError, ValueError):
         return False
 
 

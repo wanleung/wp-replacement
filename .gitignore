@@ -36,3 +36,13 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Machine-specific Compose settings
+/docker-compose.override.yml
+/docker-compose.override.yaml
+
+# Generated TypeScript build metadata
+*.tsbuildinfo
+
+# Also ignore uploads when mounted through a symlink
+/backend/uploads

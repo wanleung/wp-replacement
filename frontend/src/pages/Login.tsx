@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 import toast from 'react-hot-toast'
@@ -19,8 +20,20 @@ export default function LoginPage() {
       toast.success(`Welcome, ${data.user.display_name}!`)
       navigate('/')
     },
-    onError: () => {
-      toast.error('Invalid username or password')
+    onError: (error) => {
+      // Only a 401 actually means bad credentials — anything else is a server or
+      // network fault, and reporting it as "wrong password" sends people hunting
+      // for the wrong problem.
+      const status = error instanceof AxiosError ? error.response?.status : undefined
+      if (status === 401) {
+        toast.error('Invalid username or password')
+      } else if (status === undefined) {
+        toast.error('Cannot reach the server. Check that the backend is running.')
+      } else if (status >= 500) {
+        toast.error(`Server error (${status}). The backend may have lost its database connection.`)
+      } else {
+        toast.error(`Sign-in failed (${status}).`)
+      }
     },
   })
 
